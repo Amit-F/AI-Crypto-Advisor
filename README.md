@@ -5,5 +5,11 @@ Local Run Instructions:
         source .venv/bin/activate
         uvicorn main:app --reload --port 8000
 
-        browser: http://localhost:8000/health
-        docs: http://localhost:8000/docs
+        browser url: http://localhost:8000/health
+        docs url: http://localhost:8000/docs
+
+    FE:
+        cd client
+        npm run dev
+
+        VITE url: http://localhost:5173
