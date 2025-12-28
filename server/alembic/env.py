@@ -24,6 +24,7 @@ config.set_main_option("DATABASE_URL", db_url)
 
 # Import Base metadata (models to be added later)
 from db import Base  # noqa: E402
+import models  # noqa: F401
 
 
 # Interpret the config file for Python logging.
