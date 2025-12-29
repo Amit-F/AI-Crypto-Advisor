@@ -1,8 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from auth_routes import router as auth_router
+from preferences_routes import router as preferences_router
+from me_routes import router as me_router
+
 
 app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,8 +19,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
+
 app.include_router(auth_router)
+
+
+app.include_router(preferences_router)
+
+
+app.include_router(me_router)
