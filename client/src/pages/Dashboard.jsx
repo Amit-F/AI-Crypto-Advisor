@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { getDashboard, voteOnItem } from "../dashboardApi";
 import { clearToken } from "../auth";
 import { useNavigate } from "react-router-dom";
+import TopBar from "../components/TopBar";
+
 
 function SectionCard({ title, children }) {
   return (
@@ -117,6 +119,7 @@ export default function Dashboard() {
 
   return (
     <div style={{ maxWidth: 900, margin: "40px auto" }}>
+      <TopBar />
       <h1>Dashboard</h1>
       <p style={{ opacity: 0.8 }}>Date: {data.date}</p>
 

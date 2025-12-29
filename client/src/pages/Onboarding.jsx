@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { savePreferences } from "../preferencesApi";
 import { apiFetch } from "../api";
+import TopBar from "../components/TopBar";
+
 
 const ASSET_OPTIONS = ["BTC", "ETH", "SOL", "XRP", "DOGE", "BNB", "AVAX", "ADA"];
 const INVESTOR_TYPES = ["HODLer", "Day Trader", "NFT Collector", "DeFi Farmer", "Just Curious"];
@@ -69,6 +71,7 @@ export default function Onboarding() {
 
   return (
     <div style={{ maxWidth: 700, margin: "40px auto" }}>
+      <TopBar />
       <h1>Onboarding</h1>
       <p>Answer a few quick questions so the dashboard can personalize your content!</p>
 
