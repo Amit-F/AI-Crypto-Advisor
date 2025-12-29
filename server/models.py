@@ -25,7 +25,7 @@ class Preferences(Base):
     # one-to-one with users
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
 
-    # store arrays as JSON for speed (good enough for this take-home)
+    # store arrays as JSON for speed 
     assets = Column(JSON, nullable=False)         # e.g. ["BTC","ETH"]
     investor_type = Column(String(50), nullable=False)  # e.g. "HODLer"
     content_types = Column(JSON, nullable=False)  # e.g. ["Market News","Charts"]
