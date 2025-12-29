@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth_routes import router as auth_router
 from preferences_routes import router as preferences_router
 from me_routes import router as me_router
-
+from votes_routes import router as votes_router
+from dev_routes import router as dev_router
 
 app = FastAPI()
 
@@ -27,8 +28,10 @@ def health():
 
 app.include_router(auth_router)
 
-
 app.include_router(preferences_router)
 
-
 app.include_router(me_router)
+
+app.include_router(votes_router)
+
+app.include_router(dev_router)
