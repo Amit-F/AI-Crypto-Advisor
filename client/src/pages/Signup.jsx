@@ -35,7 +35,7 @@ export default function Signup() {
       });
 
       setToken(data.access_token);
-      nav("/dashboard"); // temporary; In future will route via /me
+      nav("/post-auth"); 
     } catch (err) {
       setError(err.message);
     } finally {
