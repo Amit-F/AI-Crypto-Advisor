@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import List, Literal
+from typing import Any, List, Literal, Optional
+from datetime import date
+
 
 
 class SignupRequest(BaseModel):
@@ -38,3 +40,13 @@ class VoteRequest(BaseModel):
 class VoteResponse(BaseModel):
     dashboard_item_id: int
     value: int
+
+class DashboardItemResponse(BaseModel):
+    id: int
+    item_type: Literal["news", "prices", "ai", "meme"]
+    payload: Any
+    user_vote: Optional[int] = None  # -1, 1, or null
+
+class DashboardResponse(BaseModel):
+    date: date
+    items: List[DashboardItemResponse]

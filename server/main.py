@@ -5,6 +5,8 @@ from preferences_routes import router as preferences_router
 from me_routes import router as me_router
 from votes_routes import router as votes_router
 from dev_routes import router as dev_router
+from dashboard_routes import router as dashboard_router
+
 
 app = FastAPI()
 
@@ -35,3 +37,5 @@ app.include_router(me_router)
 app.include_router(votes_router)
 
 app.include_router(dev_router)
+
+app.include_router(dashboard_router)
