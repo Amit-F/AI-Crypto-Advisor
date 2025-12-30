@@ -10,6 +10,9 @@ from schemas import DashboardResponse, DashboardItemResponse
 from integrations.coingecko import fetch_prices_usd
 from integrations.cryptopanic import fetch_market_news
 
+from integrations.hf_ai import fetch_ai_insight
+
+
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -72,8 +75,14 @@ async def get_dashboard(
         if t == "prices":
             # Real data from CoinGecko
             payload = await fetch_prices_usd(user_assets)
-        elif t == "news":
+        if t == "news":
             payload = await fetch_market_news(user_assets)
+        if t == "ai":
+            payload = await fetch_ai_insight({
+                "assets": user_assets,
+                "investor_type": prefs.investor_type if prefs else "crypto investor",
+                "content_types": prefs.content_types if prefs else [],
+            })
         else:
             # still stubbed for now
             payload = build_stub_payload(t)

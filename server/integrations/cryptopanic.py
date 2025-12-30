@@ -44,18 +44,19 @@ async def fetch_market_news(assets: list[str]) -> dict:
 
     slug = top.get("slug")
     post_id = top.get("id")
+    title = top.get("title")
 
     # CryptoPanic web URL
     url = top.get("url")
 
     if url is not None:
-        1 == 1
+        pass
     elif slug:
-        url = f"https://cryptopanic.com/news/?search={slug}%22/"
+        url = f"https://cryptopanic.com/news/?search={slug}"
     elif post_id:
         url = f"https://cryptopanic.com/news/{post_id}/"
     # print(url)
-
+    url = f"https://cryptopanic.com/news/?search={title}"
 
     return {
         "title": top.get("title"),
