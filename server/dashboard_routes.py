@@ -8,6 +8,8 @@ from deps import get_current_user
 from models import DashboardItem, Vote, User, Preferences
 from schemas import DashboardResponse, DashboardItemResponse
 from integrations.coingecko import fetch_prices_usd
+from integrations.cryptopanic import fetch_market_news
+
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -20,7 +22,7 @@ def build_stub_payload(item_type: str):
             "title": "Stub news headline",
             "source": "stub",
             "url": "https://example.com",
-            "summary": "Replace with CryptoPanic/real news on Day 3.",
+            "summary": "Replace with CryptoPanic/real news",
         }
     if item_type == "prices":
         return {
@@ -68,8 +70,10 @@ async def get_dashboard(
         payload = None
 
         if t == "prices":
-            # ✅ Real data from CoinGecko
+            # Real data from CoinGecko
             payload = await fetch_prices_usd(user_assets)
+        elif t == "news":
+            payload = await fetch_market_news(user_assets)
         else:
             # still stubbed for now
             payload = build_stub_payload(t)
