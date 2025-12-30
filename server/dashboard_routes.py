@@ -9,10 +9,8 @@ from models import DashboardItem, Vote, User, Preferences
 from schemas import DashboardResponse, DashboardItemResponse
 from integrations.coingecko import fetch_prices_usd
 from integrations.cryptopanic import fetch_market_news
-
 from integrations.hf_ai import fetch_ai_insight
-
-
+from integrations.reddit_memes import get_random_meme
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -35,8 +33,11 @@ def build_stub_payload(item_type: str):
         return {"text": "Stub AI insight. Replace with LLM insight on Day 3."}
     if item_type == "meme":
         return {
-            "imageUrl": "https://i.imgflip.com/30b1gx.jpg",
-            "caption": "Stub meme. Replace with dynamic meme on Day 3.",
+            "title": "Stub meme. Replace with dynamic meme on Day 3.",
+            "image_url": "https://i.imgflip.com/30b1gx.jpg",
+            "post_url": None,
+            "subreddit": None,
+            "source": "stub",
         }
     return {"note": "unknown type"}
 
@@ -58,7 +59,7 @@ async def get_dashboard(
     existing_types = {i.item_type for i in items}
     created_any = False
 
-    # Load user preferences once (for prices and later for other sections)
+    # Load user preferences once (for prices/news/ai)
     prefs = (
         db.query(Preferences)
         .filter(Preferences.user_id == current_user.id)
@@ -66,25 +67,25 @@ async def get_dashboard(
     )
     user_assets = (prefs.assets if prefs and prefs.assets else ["BTC", "ETH"])
 
+    # Ensure all 4 dashboard items exist for today (meme included for stable ID / voting)
     for t in ITEM_TYPES:
         if t in existing_types:
             continue
 
-        payload = None
-
         if t == "prices":
-            # Real data from CoinGecko
             payload = await fetch_prices_usd(user_assets)
-        if t == "news":
+        elif t == "news":
             payload = await fetch_market_news(user_assets)
-        if t == "ai":
+        elif t == "ai":
             payload = await fetch_ai_insight({
                 "assets": user_assets,
                 "investor_type": prefs.investor_type if prefs else "crypto investor",
                 "content_types": prefs.content_types if prefs else [],
             })
+        elif t == "meme":
+            # create an initial meme payload; it will be refreshed below every request
+            payload = await get_random_meme()
         else:
-            # still stubbed for now
             payload = build_stub_payload(t)
 
         db.add(
@@ -104,6 +105,14 @@ async def get_dashboard(
             .filter(DashboardItem.user_id == current_user.id, DashboardItem.date == today)
             .all()
         )
+
+    # Refresh meme payload on EVERY dashboard load (dynamic), but keep same row/id for voting
+    meme_item = next((it for it in items if it.item_type == "meme"), None)
+    if meme_item:
+        meme_item.payload = await get_random_meme()
+        db.add(meme_item)
+        db.commit()
+        db.refresh(meme_item)
 
     # Votes
     item_ids = [i.id for i in items]

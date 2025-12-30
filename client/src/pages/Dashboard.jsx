@@ -142,14 +142,60 @@ export default function Dashboard() {
         </SectionCard>
       )}
 
+
       {ai && (
         <SectionCard title="AI Insight">
           <p>{ai.payload.text}</p>
+          {ai.payload?.error ? (
+            <pre style={{ whiteSpace: "pre-wrap", opacity: 0.75 }}>
+              {ai.payload.error}
+            </pre>
+          ) : null}
           <VoteButtons itemId={ai.id} currentVote={ai.user_vote} onVote={handleVote} />
         </SectionCard>
       )}
 
+      {/* {ai && (
+        <SectionCard title="AI Insight">
+          <p>{ai.payload.text}</p>
+          <VoteButtons itemId={ai.id} currentVote={ai.user_vote} onVote={handleVote} />
+        </SectionCard>
+      )} */}
+
       {meme && (
+        <SectionCard title="Meme">
+          <p style={{ marginTop: 0 }}>
+            <b>{meme.payload?.title || "Crypto meme"}</b>
+          </p>
+
+          {meme.payload?.image_url ? (
+            <img
+              src={meme.payload.image_url}
+              alt={meme.payload?.title || "meme"}
+              style={{ maxWidth: "100%", borderRadius: 12 }}
+            />
+          ) : (
+            <p style={{ opacity: 0.8 }}>Meme unavailable right now.</p>
+          )}
+
+          {meme.payload?.post_url ? (
+            <p style={{ marginTop: 10 }}>
+              <a href={meme.payload.post_url} target="_blank" rel="noreferrer">
+                View on Reddit{meme.payload?.subreddit ? ` (${meme.payload.subreddit})` : ""}
+              </a>
+            </p>
+          ) : (
+            <p style={{ opacity: 0.6, marginTop: 10 }}>
+              Source: {meme.payload?.source || "reddit"}
+            </p>
+          )}
+
+          <VoteButtons itemId={meme.id} currentVote={meme.user_vote} onVote={handleVote} />
+        </SectionCard>
+      )}
+
+
+      {/* {meme && (
         <SectionCard title="Meme">
           <p style={{ opacity: 0.8 }}>{meme.payload.caption}</p>
           <img
@@ -159,7 +205,8 @@ export default function Dashboard() {
           />
           <VoteButtons itemId={meme.id} currentVote={meme.user_vote} onVote={handleVote} />
         </SectionCard>
-      )}
+      )} */}
+      
     </div>
   );
 }
