@@ -1,66 +1,96 @@
 import os
 import httpx
 
-BASE_URL = os.getenv(
-    "CRYPTOPANIC_BASE_URL",
-    "https://cryptopanic.com/api/developer/v2/posts/",
-)
-API_KEY = os.getenv("CRYPTOPANIC_API_KEY")
+
+def _get_cryptopanic_base_url() -> str:
+    # Prefer Render env var if set, otherwise default.
+    return os.getenv("CRYPTOPANIC_BASE_URL", "https://cryptopanic.com/api/developer/v2/posts/")
+
+
+def _get_cryptopanic_api_key() -> str | None:
+    return os.getenv("CRYPTOPANIC_API_KEY")
+
+
+def _build_fallback_news(title: str, summary: str) -> dict:
+    return {
+        "title": title,
+        "summary": summary,
+        "source": "cryptopanic",
+        "url": "https://cryptopanic.com/news/",
+    }
+
+
+def _cryptopanic_web_url_from_post(top: dict) -> str:
+    """
+    CryptoPanic developer endpoint does not always include a direct URL.
+    We'll create a reasonable web link.
+    """
+    url = top.get("url")
+    if url:
+        return url
+
+    slug = top.get("slug")
+    post_id = top.get("id")
+    title = (top.get("title") or "").strip()
+
+    if post_id:
+        # Often works even if not perfect; otherwise fallback to search.
+        return f"https://cryptopanic.com/news/{post_id}/"
+    if slug:
+        return f"https://cryptopanic.com/news/?search={slug}"
+    if title:
+        # Safe, simple fallback: search by title
+        return f"https://cryptopanic.com/news/?search={title}"
+
+    return "https://cryptopanic.com/news/"
 
 
 async def fetch_market_news(assets: list[str]) -> dict:
-    if not API_KEY:
-        return {
-            "title": "Crypto news unavailable",
-            "summary": "Missing CryptoPanic API key.",
-            "source": "cryptopanic",
-        }
+    api_key = _get_cryptopanic_api_key()
+    if not api_key:
+        return _build_fallback_news(
+            "Crypto news unavailable",
+            "Missing CryptoPanic API key.",
+        )
 
     params = {
-        "auth_token": API_KEY,
-        "currencies": ",".join(assets),
+        "auth_token": api_key,
+        "currencies": ",".join(assets) if assets else "",
         "kind": "news",
         "filter": "hot",
         "public": "true",
     }
 
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.get(BASE_URL, params=params)
-        r.raise_for_status()
-        data = r.json()
+    base_url = _get_cryptopanic_base_url()
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(base_url, params=params)
+            r.raise_for_status()
+            data = r.json()
+    except httpx.HTTPError:
+        return _build_fallback_news(
+            "Crypto news unavailable",
+            "CryptoPanic request failed (network/provider error).",
+        )
 
     results = data.get("results", [])
     if not results:
-        return {
-            "title": "No major crypto news today",
-            "summary": "CryptoPanic returned no articles.",
-            "source": "cryptopanic",
-        }
+        return _build_fallback_news(
+            "No major crypto news today",
+            "CryptoPanic returned no articles.",
+        )
 
     top = results[0]
+    web_url = _cryptopanic_web_url_from_post(top)
 
-    # print("cryptopanic top keys:", top.keys())
-    # print("cryptopanic top sample:", top)
-
-    slug = top.get("slug")
-    post_id = top.get("id")
-    title = top.get("title")
-
-    # CryptoPanic web URL
-    url = top.get("url")
-
-    if url is not None:
-        pass
-    elif slug:
-        url = f"https://cryptopanic.com/news/?search={slug}"
-    elif post_id:
-        url = f"https://cryptopanic.com/news/{post_id}/"
-    # print(url)
-    url = f"https://cryptopanic.com/news/?search={title}"
+    # Your previous summary used source.domain and published_at; keep that idea:
+    domain = (top.get("source") or {}).get("domain", "")
+    published_at = top.get("published_at", "")
 
     return {
-        "title": top.get("title"),
-        "summary": f"{top.get('source', {}).get('domain', '')} · {top.get('published_at', '')}",
-        "url": url,
+        "title": top.get("title") or "Top crypto news",
+        "summary": f"{domain} · {published_at}".strip(" ·"),
+        "url": web_url,
         "source": "cryptopanic",
     }

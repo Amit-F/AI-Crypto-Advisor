@@ -3,12 +3,16 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from pathlib import Path
+
 
 from alembic import context
 
+_ENV_PATH = Path(__file__).resolve().parents[1] / ".env"  # server/.env
+load_dotenv(dotenv_path=_ENV_PATH, override=False)
 
-# Load .env so DATABASE_URL is available
-load_dotenv()
+# # Load .env so DATABASE_URL is available
+# load_dotenv()
 
 
 # this is the Alembic Config object, which provides
@@ -17,10 +21,19 @@ config = context.config
 
 
 # Inject DATABASE_URL into alembic.ini variables
-db_url = os.getenv("DATABASE_URL")
-if not db_url:
-    raise RuntimeError("DATABASE_URL is not set. Did you create server/.env?")
-config.set_main_option("DATABASE_URL", db_url)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL is not set. Set it in the environment (Render settings) "
+        "or in server/.env for local migration runs."
+    )
+config.set_main_option("DATABASE_URL", DATABASE_URL)
+
+
+# db_url = os.getenv("DATABASE_URL")
+# if not db_url:
+#     raise RuntimeError("DATABASE_URL is not set. Did you create server/.env?")
+# config.set_main_option("DATABASE_URL", db_url)
 
 # Import Base metadata (models to be added later)
 from db import Base  # noqa: E402

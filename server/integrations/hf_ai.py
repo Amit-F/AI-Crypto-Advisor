@@ -1,9 +1,18 @@
 import os
 import httpx
 
-HF_TOKEN = os.getenv("HF_TOKEN")
-HF_MODEL = os.getenv("HF_MODEL", "openai/gpt-oss-120b:fastest")
-HF_ROUTER_BASE = os.getenv("HF_ROUTER_BASE_URL", "https://router.huggingface.co/v1")
+
+def _get_hf_token() -> str | None:
+    return os.getenv("HF_TOKEN")
+
+
+def _get_hf_model() -> str:
+    # You can override this in Render env vars if you want.
+    return os.getenv("HF_MODEL", "openai/gpt-oss-120b:fastest")
+
+
+def _get_hf_router_base() -> str:
+    return os.getenv("HF_ROUTER_BASE_URL", "https://router.huggingface.co/v1")
 
 
 async def fetch_ai_insight(preferences: dict) -> dict:
@@ -11,10 +20,15 @@ async def fetch_ai_insight(preferences: dict) -> dict:
     Uses Hugging Face Inference Providers OpenAI-compatible endpoint.
     Endpoint: POST {HF_ROUTER_BASE}/chat/completions
     """
-    if not HF_TOKEN:
+    hf_token = _get_hf_token()
+    hf_model = _get_hf_model()
+    hf_router_base = _get_hf_router_base()
+
+    if not hf_token:
         return {
             "text": "AI insight unavailable (missing Hugging Face token).",
             "source": "huggingface",
+            "model": hf_model,
         }
 
     assets = preferences.get("assets", [])
@@ -30,13 +44,13 @@ async def fetch_ai_insight(preferences: dict) -> dict:
         "Include one simple risk-management tip."
     )
 
-    url = f"{HF_ROUTER_BASE}/chat/completions"
+    url = f"{hf_router_base}/chat/completions"
     headers = {
-        "Authorization": f"Bearer {HF_TOKEN}",
+        "Authorization": f"Bearer {hf_token}",
         "Content-Type": "application/json",
     }
     body = {
-        "model": HF_MODEL,
+        "model": hf_model,
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
         "temperature": 0.7,
@@ -55,28 +69,28 @@ async def fetch_ai_insight(preferences: dict) -> dict:
             .get("content", "")
         )
         text = (text or "").strip()
+
         if not text:
             return {
                 "text": "AI insight unavailable (empty response).",
                 "source": "huggingface",
-                "model": HF_MODEL,
+                "model": hf_model,
             }
 
-        return {"text": text, "source": "huggingface", "model": HF_MODEL}
+        return {"text": text, "source": "huggingface", "model": hf_model}
 
     except httpx.HTTPStatusError as e:
-        # return a short error string inside payload to debug without crashing dashboard
-        details = e.response.text[:500]
+        details = (e.response.text or "")[:500]
         return {
             "text": "AI insight unavailable (provider error).",
             "source": "huggingface",
-            "model": HF_MODEL,
+            "model": hf_model,
             "error": f"{e.response.status_code}: {details}",
         }
     except Exception as e:
         return {
             "text": "AI insight unavailable (provider error).",
             "source": "huggingface",
-            "model": HF_MODEL,
+            "model": hf_model,
             "error": str(e)[:200],
         }

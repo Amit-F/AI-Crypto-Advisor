@@ -1,13 +1,14 @@
 import os
+from pathlib import Path
 
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# NOTE:
-# - On local dev, you may still use python-dotenv via load_dotenv() in main.py.
-# - On Render, env vars are injected by the platform (no .env file exists there).
-# - Most importantly: DO NOT crash at import time if DATABASE_URL is missing.
-#   Let the app boot so /health works, then raise only when a DB session is requested.
+# Load server/.env only for local dev convenience.
+# On Render, you should set env vars in the Render dashboard.
+_ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=_ENV_PATH, override=False)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -15,12 +16,9 @@ engine = None
 SessionLocal = None
 
 if DATABASE_URL:
-    engine = create_engine(DATABASE_URL, future=True, pool_pre_ping=True)
+    engine = create_engine(DATABASE_URL, future=True)
     SessionLocal = sessionmaker(
-        bind=engine,
-        autoflush=False,
-        autocommit=False,
-        future=True,
+        bind=engine, autoflush=False, autocommit=False, future=True
     )
 
 Base = declarative_base()
@@ -33,8 +31,9 @@ def get_db():
     """
     if SessionLocal is None:
         raise RuntimeError(
-            "DATABASE_URL is not set. Set it as an environment variable "
-            "(e.g., in Render service settings)."
+            "DATABASE_URL is not set. "
+            "Set DATABASE_URL in the environment (e.g., Render service settings). "
+            "For local dev, create server/.env with DATABASE_URL=..."
         )
 
     db = SessionLocal()
