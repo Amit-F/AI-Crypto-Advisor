@@ -29,6 +29,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root():
+    return {"status": "ok", "message": "Backend is running. See /docs for API."}
+
 
 @app.get("/health")
 def health():
