@@ -1,10 +1,23 @@
 import { getToken } from "./auth";
 
-// API helper centralizes backend calls
+// Single source of truth for backend base URL.
+// In Vercel, set VITE_API_URL to your Render backend URL, e.g.:
+//   https://ai-crypto-advisor-eetg.onrender.com
+// Locally, it falls back to http://localhost:8000
+const RAW_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// Normalize: remove trailing slashes so `${BASE_URL}${path}` is safe.
+const BASE_URL = RAW_BASE_URL.replace(/\/+$/, "");
 
-export async function apiFetch(path, { method = "GET", body, auth = false } = {}) {
+function normalizePath(path) {
+  if (!path) return "";
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+export async function apiFetch(
+  path,
+  { method = "GET", body, auth = false } = {}
+) {
   const headers = { "Content-Type": "application/json" };
 
   if (auth) {
@@ -12,7 +25,9 @@ export async function apiFetch(path, { method = "GET", body, auth = false } = {}
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const url = `${BASE_URL}${normalizePath(path)}`;
+
+  const res = await fetch(url, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -21,7 +36,11 @@ export async function apiFetch(path, { method = "GET", body, auth = false } = {}
   let data = null;
   const text = await res.text();
   if (text) {
-    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
+    }
   }
 
   function humanizeField(locArr) {
@@ -41,22 +60,28 @@ export async function apiFetch(path, { method = "GET", body, auth = false } = {}
 
     // FastAPI/Pydantic: detail is an array (422 validation)
     if (Array.isArray(data.detail)) {
-      // Try to produce the best single message for common cases
       for (const e of data.detail) {
         const field = humanizeField(e.loc);
 
         // Password min length
-        if (field === "Password" && typeof e.msg === "string" && e.msg.includes("at least")) {
+        if (
+          field === "Password" &&
+          typeof e.msg === "string" &&
+          e.msg.includes("at least")
+        ) {
           return "Password must be at least 6 characters.";
         }
 
         // Password max length
-        if (field === "Password" && typeof e.msg === "string" && e.msg.includes("at most")) {
+        if (
+          field === "Password" &&
+          typeof e.msg === "string" &&
+          e.msg.includes("at most")
+        ) {
           return "Password must be at most 128 characters.";
         }
       }
 
-      // Generic fallback: "Email: value is not a valid email address"
       return data.detail
         .map((e) => {
           const field = humanizeField(e.loc);
@@ -75,52 +100,14 @@ export async function apiFetch(path, { method = "GET", body, auth = false } = {}
     }
   }
 
-
-//   function extractErrorMessage(data, status) {
-//     if (!data) return `Request failed (${status})`;
-
-//     // FastAPI common patterns:
-//     // 1) detail is a string
-//     if (typeof data.detail === "string") return data.detail;
-
-//     // 2) detail is an array of validation issues (422)
-//     if (Array.isArray(data.detail)) {
-//         // Try to turn Pydantic errors into readable lines
-//         const lines = data.detail.map((e) => {
-//         const loc = Array.isArray(e.loc) ? e.loc.join(".") : "";
-//         const msg = e.msg || "Validation error";
-//         return loc ? `${loc}: ${msg}` : msg;
-//         });
-//         return lines.join("\n");
-//     }
-
-//     // 3) generic message fields
-//     if (typeof data.message === "string") return data.message;
-
-//     // 4) fallback to JSON string
-//     try {
-//         return JSON.stringify(data);
-//     } catch {
-//         return `Request failed (${status})`;
-//     }
-//   }
-
-
   if (!res.ok) {
     const message = extractErrorMessage(data, res.status);
     const err = new Error(message);
     err.status = res.status;
     err.data = data;
+    err.url = url;
     throw err;
   }
-
-//   if (!res.ok) {
-//     const message = data?.detail || data?.message || `Request failed (${res.status})`;
-//     const err = new Error(message);
-//     err.status = res.status;
-//     err.data = data;
-//     throw err;
-//   }
 
   return data;
 }
