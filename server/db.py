@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # Load .env variables (DATABASE_URL, etc.)
-load_dotenv()
+# load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:

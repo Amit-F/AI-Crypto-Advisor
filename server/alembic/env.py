@@ -1,48 +1,31 @@
-from logging.config import fileConfig
 import os
-from dotenv import load_dotenv
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-
 from alembic import context
+from sqlalchemy import engine_from_config, pool
+from logging.config import fileConfig
 
+# Fallback: load .env ONLY if DATABASE_URL not already set
+if not os.getenv("DATABASE_URL"):
+    from dotenv import load_dotenv
+    load_dotenv()
 
-# Load .env so DATABASE_URL is available
-load_dotenv()
-
-
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
 
-
-# Inject DATABASE_URL into alembic.ini variables
 db_url = os.getenv("DATABASE_URL")
 if not db_url:
-    raise RuntimeError("DATABASE_URL is not set. Did you create server/.env?")
-config.set_main_option("DATABASE_URL", db_url)
+    raise RuntimeError("DATABASE_URL is not set")
 
-# Import Base metadata (models to be added later)
-from db import Base  # noqa: E402
-import models  # noqa: F401
+# THIS is the key line (since no alembic.ini exists)
+config.set_main_option("sqlalchemy.url", db_url)
 
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-# target_metadata = None
+from db import Base  # noqa
+import models  # noqa
+
 target_metadata = Base.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def run_migrations_offline() -> None:

@@ -7,6 +7,12 @@ from votes_routes import router as votes_router
 from dev_routes import router as dev_router
 from dashboard_routes import router as dashboard_router
 from dotenv import load_dotenv
+from alembic.config import Config
+from alembic import command
+import os
+
+
+
 load_dotenv()
 
 
@@ -24,6 +30,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+def run_migrations():
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
+
+@app.on_event("startup")
+async def startup_event():
+    run_migrations()
 
 
 @app.get("/health")
