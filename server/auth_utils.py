@@ -1,15 +1,11 @@
-# server/auth_utils.py
 import os
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime, timedelta, timezone
 
 from dotenv import load_dotenv
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 
-# Load server/.env only for local dev convenience.
-_ENV_PATH = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=_ENV_PATH, override=False)
+load_dotenv()
 
 # --- Password hashing ---
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -24,36 +20,42 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # --- JWT config ---
+JWT_SECRET = os.getenv("JWT_SECRET")
+
+# In production we MUST have a secret. Locally it's fine to fall back.
+ENV = os.getenv("ENV", "development").lower()
+
+if not JWT_SECRET:
+    if ENV in ("production", "prod"):
+        raise RuntimeError("JWT_SECRET is not set")
+    # Dev fallback so local runs don't crash.
+    JWT_SECRET = "dev-insecure-secret-change-me"
+
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
-
-
-def _get_jwt_secret() -> str:
-    secret = os.getenv("JWT_SECRET")
-    if not secret:
-        raise RuntimeError(
-            "JWT_SECRET is not set. "
-            "Set JWT_SECRET in the environment (Render service settings). "
-            "For local dev, create server/.env with JWT_SECRET=..."
-        )
-    return secret
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24h default
 
 
 def create_access_token(subject: str) -> str:
     """
     subject = user identifier (we'll use user.id as string)
     """
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {"sub": subject, "exp": expire}
-    return jwt.encode(payload, _get_jwt_secret(), algorithm=JWT_ALGORITHM)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    payload = {
+        "sub": subject,
+        # Use numeric timestamp to be unambiguous everywhere
+        "exp": int(expire.timestamp()),
+        "iat": int(datetime.now(timezone.utc).timestamp()),
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
 def decode_access_token(token: str) -> str:
     """
-    Returns subject (user id) if valid, raises if invalid.
+    Returns subject (user id) if valid, raises JWTError if invalid.
     """
-    try:
-        payload = jwt.decode(token, _get_jwt_secret(), algorithms=[JWT_ALGORITHM])
-        return payload["sub"]
-    except JWTError:
-        raise
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    sub = payload.get("sub")
+    if not sub:
+        raise JWTError("Missing sub")
+    return sub
