@@ -23,6 +23,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://ai-crypto-advisor-cxf0balvo-amit-fs-projects.vercel.app",
         "CORS_ORIGINS",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
