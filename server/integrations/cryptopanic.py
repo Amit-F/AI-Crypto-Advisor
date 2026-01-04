@@ -20,7 +20,7 @@ async def fetch_market_news(assets: list[str]) -> dict:
         "auth_token": API_KEY,
         "currencies": ",".join(assets),
         "kind": "news",
-        "filter": "hot",
+        # "filter": "hot",
         "public": "true",
     }
 
@@ -49,6 +49,7 @@ async def fetch_market_news(assets: list[str]) -> dict:
     # CryptoPanic web URL
     url = top.get("url")
 
+    # TODO check again
     if url is not None:
         pass
     elif slug:

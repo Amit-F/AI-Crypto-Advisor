@@ -40,7 +40,7 @@ async def fetch_ai_insight(preferences: dict) -> dict:
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
         "temperature": 0.7,
-        "max_tokens": 180,
+        "max_tokens": 500,
     }
 
     try:
@@ -54,6 +54,13 @@ async def fetch_ai_insight(preferences: dict) -> dict:
             .get("message", {})
             .get("content", "")
         )
+        print("start")
+        print("RAW RESPONSE:", data)
+        print(data.get("choices")[0]
+            .get("message", {})
+            .get("content", "")
+        )
+        print("end")
         text = (text or "").strip()
         if not text:
             return {

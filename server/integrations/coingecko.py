@@ -3,7 +3,7 @@ import os
 
 BASE_URL = os.getenv("COINGECKO_BASE_URL", "https://api.coingecko.com/api/v3")
 
-# Map symbols to CoinGecko IDs (extend later if needed)
+# Map symbols to CoinGecko IDs 
 SYMBOL_TO_ID = {
     "BTC": "bitcoin",
     "ETH": "ethereum",
