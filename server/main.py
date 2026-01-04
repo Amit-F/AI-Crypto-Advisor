@@ -23,6 +23,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://ai-crypto-advisor-beryl.vercel.app/",
         "https://ai-crypto-advisor-jfz4lwbty-amit-fs-projects.vercel.app",
         "https://ai-crypto-advisor-cxf0balvo-amit-fs-projects.vercel.app",
         "CORS_ORIGINS",
